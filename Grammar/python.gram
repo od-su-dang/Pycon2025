@@ -135,6 +135,8 @@ compound_stmt[stmt_ty]:
     | &'try' try_stmt
     | &'while' while_stmt
     | match_stmt
+# 수정
+    | &'defer' defer_stmt
 
 # SIMPLE STATEMENTS
 # =================
@@ -243,6 +245,31 @@ block[asdl_stmt_seq*] (memo):
     | invalid_block
 
 decorators[asdl_expr_seq*]: a[asdl_expr_seq*]=('@' f=named_expression NEWLINE { f })+ { a }
+
+
+# 수정
+
+# Defer definitions
+# -----------------
+
+defer_stmt[stmt_ty]:
+    | 'defer' a=[defer_params] ':' b=block { 
+        _PyAST_Defer((a) ? a : CHECK(arguments_ty, _PyPegen_empty_arguments(p)), b, EXTRA) }
+
+# Defer parameters
+# -------------------
+
+defer_params[arguments_ty]:
+    | defer_parameters
+
+defer_parameters[arguments_ty]:
+    | a=defer_param_no_default+ { _PyPegen_make_arguments(p, NULL, NULL, a, NULL, NULL) }
+
+defer_param_no_default[arg_ty]:
+    | a=defer_param ',' { a }
+    | a=defer_param &':' { a }
+
+defer_param[arg_ty]: a=NAME { _PyAST_arg(a->v.Name.id, NULL, NULL, EXTRA) }
 
 # Class definitions
 # -----------------
