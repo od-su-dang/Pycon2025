@@ -878,6 +878,7 @@ extern "C" {
     INIT_ID(decoder), \
     INIT_ID(default), \
     INIT_ID(defaultaction), \
+    INIT_ID(defer), \
     INIT_ID(delete), \
     INIT_ID(depth), \
     INIT_ID(desired_access), \
