@@ -711,7 +711,8 @@ analyze_name(PySTEntryObject *ste, PyObject *scopes, PyObject *name, long flags,
        Note that having a non-NULL bound implies that the block
        is nested.
     */
-    if (bound) {
+   // 수정
+    if (bound && ste->ste_type != DeferBlock) {
         contains = PySet_Contains(bound, name);
         if (contains < 0) {
             return 0;
@@ -1909,6 +1910,12 @@ symtable_visit_stmt(struct symtable *st, stmt_ty s)
         break;
     }
     case Nonlocal_kind: {
+        // 수정
+        if (st->st_cur->ste_type == DeferBlock) {
+            PyErr_Format(PyExc_SyntaxError,
+            "nonlocal declarations are not allowed inside a defer block");
+            VISIT_QUIT(st, 0);
+        }
         int i;
         asdl_identifier_seq *seq = s->v.Nonlocal.names;
         for (i = 0; i < asdl_seq_LEN(seq); i++) {
