@@ -2007,6 +2007,53 @@ symtable_visit_stmt(struct symtable *st, stmt_ty s)
         if (s->v.AsyncFor.orelse)
             VISIT_SEQ(st, stmt, s->v.AsyncFor.orelse);
         break;
+    // 수정
+    case Defer_kind:
+        if (!symtable_enter_block(st, &_Py_ID(defer),
+                                  DeferBlock, (void *)s, 
+                                  s->lineno, s->col_offset, 
+                                  s->end_lineno, s->end_col_offset))
+            VISIT_QUIT(st, 0);
+
+        VISIT(st, arguments, s->v.Defer.args);
+        VISIT_SEQ(st, stmt, s->v.Defer.body);
+
+        PyObject *key, *value;
+        Py_ssize_t pos = 0;
+
+        Py_ssize_t stack_size = PyList_GET_SIZE(st->st_stack);
+        PySTEntryObject *outer = NULL;
+        PyObject *outer_symbols = NULL;
+
+        if (stack_size >= 2) {
+            outer = (PySTEntryObject *)PyList_GET_ITEM(st->st_stack, stack_size - 2);
+            outer_symbols = outer->ste_symbols;
+        }
+
+        while (PyDict_Next(st->st_cur->ste_symbols, &pos, &key, &value)) {
+            long flags = symtable_lookup(st, key);
+            if (flags < 0) {
+                VISIT_QUIT(st, 0);
+            }
+
+            if (!(flags & DEF_PARAM)) {
+                continue;
+            }
+
+            if (outer_symbols) {
+                // 상위 테이블에서 key값(변수, 함수 등의 이름)이 존재하는지 확인
+                long outer_flags = symtable_lookup_entry(st, outer, key);
+                //실제로 존재하는지 확인 및 타입 확인
+                if (!outer_flags) {
+                    PyObject *error_msg = PyUnicode_FromFormat("no binding for defer '%U' found", key);
+                    Py_DECREF(error_msg);
+                }
+            }
+        }
+
+        if (!symtable_exit_block(st))
+            VISIT_QUIT(st, 0);
+        break;
     }
     VISIT_QUIT(st, 1);
 }

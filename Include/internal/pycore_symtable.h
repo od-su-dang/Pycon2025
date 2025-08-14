@@ -11,7 +11,8 @@ extern "C" {
 struct _mod;   // Type defined in pycore_ast.h
 
 typedef enum _block_type {
-    FunctionBlock, ClassBlock, ModuleBlock,
+    // 수정
+    FunctionBlock, ClassBlock, ModuleBlock, DeferBlock,
     // Used for annotations if 'from __future__ import annotations' is active.
     // Annotation blocks cannot bind names and are not evaluated.
     AnnotationBlock,
